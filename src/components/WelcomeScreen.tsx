@@ -15,14 +15,14 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStart }) => {
               <Heart className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4 leading-tight">
-              Test de Estado Emocional
+              Cuestionario de Bienestar
             </h1>
             <p className="text-xl text-gray-600 mb-6">
               ¿En qué color estás hoy?
             </p>
             <p className="text-gray-600 max-w-lg mx-auto leading-relaxed">
               Todos tenemos días buenos, regulares o difíciles... pero, ¿sabes realmente en qué punto estás ahora?
-              En 5 minutos y 15 preguntas, este test te ayudará a descubrir si tu estado emocional está en verde, amarillo o rojo.
+              En 5 minutos y 16 preguntas, este test te ayudará a descubrir si tu estado emocional está en verde, amarillo o rojo.
             </p>
           </div>
 
@@ -37,7 +37,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStart }) => {
             <div className="flex items-center space-x-3 p-4 bg-green-50 rounded-xl">
               <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0" />
               <div>
-                <h3 className="font-semibold text-gray-800">15 preguntas</h3>
+                <h3 className="font-semibold text-gray-800">16 preguntas</h3>
                 <p className="text-sm text-gray-600">Evaluación completa</p>
               </div>
             </div>
@@ -55,7 +55,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStart }) => {
             <ul className="space-y-2 text-gray-700">
               <li className="flex items-center space-x-2">
                 <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                <span>Tu color emocional actual (verde, amarillo o rojo)</span>
+                <span>Tu color emocional actual (verde, amarillo, naranjo o rojo)</span>
               </li>
               <li className="flex items-center space-x-2">
                 <span className="w-2 h-2 bg-blue-500 rounded-full"></span>

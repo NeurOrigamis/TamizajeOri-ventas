@@ -1,0 +1,20 @@
+```diff
+--- a/Google Apps Script
++++ b/Google Apps Script
+@@ -60,10 +60,11 @@
+     const scoreEstres   =  p.scoreEstres   ?? '';
+     const scoreAnimo    =  p.scoreAnimo    ?? '';
+     const scoreConfianza=  p.scoreConfianza?? '';
++    const timestamp     =  p.timestamp     ?? new Date().toISOString(); // Usar el timestamp enviado o generar uno nuevo
+
+     if (!nombre || !email)       return jsonResponse({ ok:false, error:'Faltan campos (nombre, email).' }, 400);
+     if (!isValidEmail(email))    return jsonResponse({ ok:false, error:'Email inválido.' }, 400);
+
+     const sh = ensureSheetAndHeaders();
+     sh.appendRow([
+-      new Date(), nombre, email, sessionId, userAgent,
++      timestamp, nombre, email, sessionId, userAgent,
+       scoreTotal, scoreEstres, scoreAnimo, scoreConfianza
+     ]);
+
+```
