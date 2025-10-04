@@ -9,6 +9,7 @@ export async function sendToSheetForm(p: {
   scoreAnimo?: number; 
   scoreConfianza?: number;
   safetyQuestionAnswer?: number | string;
+  resultColor?: string;
   webAppUrl: string;
 }) {
   const body = new URLSearchParams({
@@ -21,7 +22,8 @@ export async function sendToSheetForm(p: {
     scoreEstres: String(p.scoreEstres ?? ''),
     scoreAnimo: String(p.scoreAnimo ?? ''),
     scoreConfianza: String(p.scoreConfianza ?? ''),
-    safetyQuestionAnswer: String(p.safetyQuestionAnswer ?? '')
+    safetyQuestionAnswer: String(p.safetyQuestionAnswer ?? ''),
+    resultColor: p.resultColor ?? '',
   }).toString();
 
   await fetch(p.webAppUrl, {

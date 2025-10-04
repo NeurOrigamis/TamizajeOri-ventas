@@ -12,9 +12,6 @@ interface QuestionCardProps {
   onPrevious: () => void;
   canGoNext: boolean;
   canGoPrevious: boolean;
-  showSafetyQuestion?: boolean;
-  showAbandonmentQuestion?: boolean;
-  safetyAlert?: boolean;
 }
 
 const defaultAnswerOptions = [
@@ -22,13 +19,6 @@ const defaultAnswerOptions = [
   { label: 'Varios días (2-6)', value: 1, color: 'from-yellow-400 to-yellow-500', emoji: '😐' },
   { label: 'Más de la mitad (7-11)', value: 2, color: 'from-orange-400 to-orange-500', emoji: '😟' },
   { label: 'Casi todos los días (12-14)', value: 3, color: 'from-red-400 to-red-500', emoji: '😩' }
-];
-
-const abandonmentAnswerOptions = [
-  { label: 'No, me siento cómodo/a avanzando en el cuestionario.', value: 0, color: 'from-green-400 to-green-500', emoji: '😊' },
-  { label: 'No, pero algunas preguntas me generan inquietud o incomodidad.', value: 1, color: 'from-yellow-400 to-yellow-500', emoji: '😐' },
-  { label: 'Sí, me siento cansado/a o con poca motivación.', value: 2, color: 'from-orange-400 to-orange-500', emoji: '😟' },
-  { label: 'Sí, me incomoda conectarme con emociones difíciles.', value: 3, color: 'from-red-400 to-red-500', emoji: '😩' }
 ];
 
 const categoryColors = {
@@ -48,22 +38,15 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
   onPrevious,
   canGoNext,
   canGoPrevious,
-  showSafetyQuestion = false,
-  showAbandonmentQuestion = false,
-  safetyAlert = false
 }) => {
   const handleNext = () => {
     onNext();
   };
 
   const progress = (questionNumber / totalQuestions) * 100;
-  const categoryColor = showSafetyQuestion 
-    ? 'from-red-500 to-red-600' 
-    : showAbandonmentQuestion
-    ? 'from-purple-500 to-indigo-600'
-    : categoryColors[category as keyof typeof categoryColors] || 'from-blue-500 to-purple-500';
+  const categoryColor = categoryColors[category as keyof typeof categoryColors] || 'from-blue-500 to-purple-500';
 
-  const answerOptions = showAbandonmentQuestion ? abandonmentAnswerOptions : defaultAnswerOptions;
+  const answerOptions = defaultAnswerOptions;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center p-4">
@@ -79,7 +62,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
 
           <div className="p-8 md:p-12">
             {/* Instructions - Solo mostrar en la primera pregunta */}
-            {questionNumber === 1 && !showSafetyQuestion && !showAbandonmentQuestion && (
+            {questionNumber === 1 && (
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 mb-8 border border-blue-100">
                 <div className="flex items-center mb-3">
                   <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center mr-3">
@@ -94,59 +77,22 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
               </div>
             )}
 
-            {/* Safety Alert */}
-            {safetyAlert && (
-              <div className="bg-gradient-to-r from-red-50 to-pink-50 border-l-4 border-red-400 rounded-r-2xl p-6 mb-8 shadow-lg">
-                <div className="flex items-center">
-                  <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center mr-4">
-                    <AlertTriangle className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-red-800">Importante</h3>
-                    <p className="text-red-700 mt-2">
-                      Hemos detectado que podrías necesitar apoyo inmediato. Te recomendamos contactar con un profesional de la salud mental o llamar a una línea de crisis.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* Header */}
             <div className="text-center mb-8">
-              {!showSafetyQuestion && !showAbandonmentQuestion && category && (
+              {category && (
                 <div className={`inline-flex items-center px-6 py-3 rounded-full bg-gradient-to-r ${categoryColor} text-white text-sm font-medium mb-2 shadow-lg`}>
                   <div className="w-2 h-2 bg-white rounded-full mr-2 animate-pulse"></div>
                   {category}
                 </div>
               )}
-              {!showSafetyQuestion && !showAbandonmentQuestion && category && (
+              {category && (
                 <p className="text-sm text-gray-500 mt-2 mb-4 font-medium">
                   En los últimos 14 días
                 </p>
               )}
-              {showSafetyQuestion && (
-                <div className="inline-flex items-center px-6 py-3 rounded-full bg-gradient-to-r from-red-500 to-red-600 text-white text-sm font-medium mb-6 shadow-lg">
-                  ⚠️ Pregunta de Seguridad
-                </div>
-              )}
-              {showAbandonmentQuestion && (
-                <div className="inline-flex items-center px-6 py-3 rounded-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white text-sm font-medium mb-6 shadow-lg">
-                  💭 Reflexión sobre tu experiencia
-                </div>
-              )}
               <h2 className="text-2xl md:text-3xl font-bold text-gray-800 leading-tight">
                 {question.text}
               </h2>
-              {question.subtitle && (
-                <p className="text-lg text-gray-600 mt-4 italic">
-                  {question.subtitle}
-                </p>
-              )}
-              {showSafetyQuestion && (
-                <p className="text-sm text-gray-600 mt-4 italic bg-gray-50 px-4 py-2 rounded-lg">
-                  Esta pregunta no suma al puntaje total, pero es importante para tu seguridad.
-                </p>
-              )}
             </div>
             <div className="space-y-4 mb-8">
               {answerOptions.map((option) => (
@@ -187,13 +133,13 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
               <button
                 onClick={onPrevious}
                 disabled={!canGoPrevious}
-                className={`flex items-center space-x-2 px-6 py-3 rounded-xl font-medium transition-all duration-300 ${
+                className={`flex items-center space-x-2 px-4 md:px-6 py-2 md:py-3 rounded-xl font-medium transition-all duration-300 text-sm md:text-base ${
                   canGoPrevious
                     ? 'text-gray-600 hover:text-gray-800 hover:bg-gray-100 transform hover:scale-105'
                     : 'text-gray-400 cursor-not-allowed'
                 }`}
               >
-                <ChevronLeft className="w-5 h-5" />
+                <ChevronLeft className="w-4 h-4 md:w-5 md:h-5" />
                 <span>Anterior</span>
               </button>
 
@@ -204,14 +150,14 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
               <button
                 onClick={handleNext}
                 disabled={!canGoNext}
-                className={`flex items-center space-x-2 px-6 py-3 rounded-xl font-medium transition-all duration-300 ${
+                className={`flex items-center space-x-2 px-4 md:px-6 py-2 md:py-3 rounded-xl font-medium transition-all duration-300 text-sm md:text-base ${
                   canGoNext
                     ? `bg-gradient-to-r ${categoryColor} text-white hover:opacity-90 transform hover:scale-105 shadow-lg hover:shadow-xl`
                     : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                 }`}
               >
                 <span>{questionNumber === totalQuestions ? 'Ver Resultados' : 'Siguiente'}</span>
-                <ChevronRight className="w-5 h-5" />
+                <ChevronRight className="w-4 h-4 md:w-5 md:h-5" />
               </button>
             </div>
           </div>

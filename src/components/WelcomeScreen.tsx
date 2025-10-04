@@ -22,7 +22,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStart }) => {
             </p>
             <p className="text-gray-600 max-w-lg mx-auto leading-relaxed">
               Todos tenemos días buenos, regulares o difíciles... pero, ¿sabes realmente en qué punto estás ahora?
-              En 5 minutos y 16 preguntas, este test te ayudará a descubrir si tu estado emocional está en verde, amarillo o rojo.
+              En 5 minutos y 10 preguntas, este test te ayudará a descubrir si tu estado emocional está en verde, amarillo o rojo.
             </p>
           </div>
 
@@ -37,7 +37,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStart }) => {
             <div className="flex items-center space-x-3 p-4 bg-green-50 rounded-xl">
               <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0" />
               <div>
-                <h3 className="font-semibold text-gray-800">16 preguntas</h3>
+                <h3 className="font-semibold text-gray-800">10 preguntas</h3>
                 <p className="text-sm text-gray-600">Evaluación completa</p>
               </div>
             </div>

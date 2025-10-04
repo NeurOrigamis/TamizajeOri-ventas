@@ -19,10 +19,6 @@ function App() {
     totalQuestions,
     currentAnswer,
     isCompleted,
-    showSafetyQuestion,
-    showAbandonmentQuestion,
-    safetyAlert,
-    safetyAnswer,
     sessionId,
     answerQuestion,
     goToNextQuestion,
@@ -30,6 +26,7 @@ function App() {
     calculateResult,
     calculateCategoryScores,
     getTriageRecommendation,
+    getDetailedAnswers,
     resetQuestionnaire,
     canGoNext,
     canGoPrevious
@@ -69,18 +66,18 @@ function App() {
     const { result, score } = calculateResult();
     const categoryScores = calculateCategoryScores();
     const triageRecommendation = getTriageRecommendation();
+    const detailedAnswers = getDetailedAnswers();
     return (
-      <ResultsScreen 
-        result={result} 
-        score={score} 
+      <ResultsScreen
+        result={result}
+        score={score}
         categoryScores={categoryScores}
         triageRecommendation={triageRecommendation}
+        detailedAnswers={detailedAnswers}
         sessionId={sessionId}
         userData={userData}
-        safetyAlert={safetyAlert}
-        safetyQuestionAnswer={safetyAnswer?.value}
         webAppUrl={WEB_APP_URL}
-        onRestart={handleRestart} 
+        onRestart={handleRestart}
       />
     );
   }
@@ -98,9 +95,6 @@ function App() {
       onPrevious={goToPreviousQuestion}
       canGoNext={canGoNext}
       canGoPrevious={canGoPrevious}
-      showSafetyQuestion={showSafetyQuestion}
-      showAbandonmentQuestion={showAbandonmentQuestion}
-      safetyAlert={safetyAlert}
     />
   );
 }

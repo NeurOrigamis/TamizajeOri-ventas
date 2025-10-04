@@ -61,7 +61,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegister }
               Antes de continuar...
             </h1>
             <p className="text-gray-600">
-              Para brindarte una experiencia personalizada y poder contactarte con tus resultados, necesitamos algunos datos básicos.
+              Para brindarte una experiencia personalizada, necesitamos algunos datos básicos.
             </p>
           </div>
 
