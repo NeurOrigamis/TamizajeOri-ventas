@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Heart, RefreshCw, CheckCircle, AlertTriangle, AlertCircle, Clock, Loader2, Sparkles, Shield, TrendingUp, Target, Users, Award, Stethoscope } from 'lucide-react';
 import { sendToSheetForm } from '../lib/sheets';
+import { generateAIAnalysis, AIAnalysisError, AIServiceError } from '../lib/aiAnalysis';
 
 interface DetailedAnswer {
   questionId: number;
@@ -17,11 +18,6 @@ interface ResultsScreenProps {
     scoreEstres: number;
     scoreAnimo: number;
     scoreControl: number;
-  };
-  triageRecommendation: {
-    priority: string;
-    recommendation: string;
-    type: string;
   };
   detailedAnswers: DetailedAnswer[];
   sessionId: string;
@@ -45,10 +41,10 @@ const resultConfig = {
     emotion: 'aspiracional',
     resultLabel: 'Bienestar Alto',
     benefits: [
-      { icon: '🚀', title: 'Crecimiento continuo', text: 'Desarrolla resiliencia y liderazgo emocional avanzado' },
-      { icon: '💪', title: 'Fortalece lo que ya tienes', text: 'Convierte tus capacidades actuales en superpoderes' },
-      { icon: '🎯', title: 'Prevención proactiva', text: 'Mantén tu bienestar alto incluso bajo presión' },
-      { icon: '⭐', title: 'Impacto duradero', text: 'Herramientas que te acompañarán toda la vida' }
+      { icon: '🔥', title: 'Fortalecimiento preventivo', text: 'Potencia tu resiliencia con técnicas basadas en evidencia' },
+      { icon: '⚡', title: 'Herramientas duraderas', text: 'Estrategias prácticas de regulación y autocuidado personalizadas' },
+      { icon: '🎯', title: 'Diagnóstico preciso', text: 'Evaluación completa de tu perfil emocional actual' },
+      { icon: '💡', title: 'Prevención sostenible', text: 'Mantiene tu bienestar alto incluso bajo presión futura' }
     ]
   },
   yellow: {
@@ -65,10 +61,10 @@ const resultConfig = {
     emotion: 'preventivo',
     resultLabel: 'Alerta Temprana',
     benefits: [
-      { icon: '🛡️', title: 'Protección inmediata', text: 'Fortalece hábitos antes de que el desgaste avance' },
-      { icon: '⏰', title: 'El momento ideal', text: 'Prevenir es más fácil y efectivo que revertir' },
-      { icon: '📊', title: 'Plan personalizado', text: 'Estrategias adaptadas a tu situación específica' },
-      { icon: '🌱', title: 'Recuperación rápida', text: 'Restaura tu energía y equilibrio emocional' }
+      { icon: '🛡️', title: 'Detección temprana', text: 'Identifica y revierte signos de deterioro antes de la crisis' },
+      { icon: '⏰', title: 'El momento ideal', text: 'Intervenir ahora es más fácil que esperar el cuadro consolidado' },
+      { icon: '📊', title: 'Diagnóstico completo', text: 'Evaluación precisa de estrés, ánimo, autocontrol y rumiación' },
+      { icon: '🌱', title: 'Plan de acción claro', text: 'Estrategias prácticas de regulación adaptadas a ti' }
     ]
   },
   orange: {
@@ -85,10 +81,10 @@ const resultConfig = {
     emotion: 'urgente',
     resultLabel: 'Al Límite',
     benefits: [
-      { icon: '🔥', title: 'Intervención especializada', text: 'Herramientas probadas para manejar presión intensa' },
-      { icon: '⚡', title: 'Aún estás a tiempo', text: 'Reversible con el apoyo y estrategias correctas' },
-      { icon: '🎯', title: 'Regulación emocional', text: 'Aprende a controlar emociones intensas efectivamente' },
-      { icon: '💡', title: 'Claridad mental', text: 'Recupera tu capacidad de pensar con calma' }
+      { icon: '🔥', title: 'Detección antes de crisis', text: 'Programa diseñado para revertir signos críticos de deterioro' },
+      { icon: '⚡', title: 'Aún estás a tiempo', text: 'Reversible con diagnóstico preciso y plan personalizado' },
+      { icon: '🎯', title: 'Regulación del sistema nervioso', text: 'Técnicas somáticas para recuperar el control emocional' },
+      { icon: '💡', title: 'Diagnóstico + Plan de acción', text: 'Estrategias prácticas de recuperación personalizadas' }
     ]
   },
   red: {
@@ -105,10 +101,10 @@ const resultConfig = {
     emotion: 'contención',
     resultLabel: 'Sobrecarga',
     benefits: [
-      { icon: '💙', title: 'Apoyo inmediato', text: 'No tienes que enfrentar esto solo/a' },
-      { icon: '🤝', title: 'Acompañamiento experto', text: 'Profesionales especializados en crisis emocionales' },
-      { icon: '🆘', title: 'Estrategias de emergencia', text: 'Herramientas inmediatas para recuperar estabilidad' },
-      { icon: '🌅', title: 'Camino hacia la calma', text: 'Paso a paso hacia tu recuperación emocional' }
+      { icon: '💙', title: 'Contención inmediata', text: 'Respuesta especializada a crisis emocionales agudas' },
+      { icon: '🤝', title: 'Diagnóstico rápido', text: 'Evaluación precisa de tu estado emocional actual' },
+      { icon: '🆘', title: 'Intervención urgente', text: 'Plan de acción antes de que se consolide el cuadro clínico' },
+      { icon: '🌅', title: 'Reversión del deterioro', text: 'Detectar, comprender y revertir signos críticos de sobrecarga' }
     ]
   }
 };
@@ -117,7 +113,6 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
   result,
   score,
   categoryScores,
-  triageRecommendation,
   detailedAnswers,
   sessionId,
   userData,
@@ -126,9 +121,27 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [aiAnalysis, setAiAnalysis] = useState<{
+    interpretation: string;
+    actionPlan: string[];
+    consequences: string[];
+  } | null>(null);
+  const [isLoadingAI, setIsLoadingAI] = useState(true);
+  const [aiError, setAiError] = useState(false);
+  const [aiErrorType, setAiErrorType] = useState<AIAnalysisError | null>(null);
+  const [aiErrorMessage, setAiErrorMessage] = useState<string>('');
+  const [canRetryAI, setCanRetryAI] = useState(false);
 
   const config = resultConfig[result];
   const IconComponent = config.icon;
+
+  // Extraer solo el primer nombre si hay múltiples palabras
+  const getFirstName = (fullName: string | undefined) => {
+    if (!fullName) return undefined;
+    return fullName.trim().split(/\s+/)[0];
+  };
+
+  const firstName = getFirstName(userData?.name);
 
   // Determinar si mostrar botón de psiquiatría (naranja/rojo general o cualquier sub-item en rojo)
   const showPsychiatryButton =
@@ -165,8 +178,125 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
     return colorMap[color as keyof typeof colorMap] || color.toUpperCase();
   };
 
-  // Función para analizar respuestas individuales y generar interpretación personalizada
-  const getPersonalizedInterpretation = () => {
+  const fetchAIAnalysis = async () => {
+    try {
+      setIsLoadingAI(true);
+      setAiError(false);
+      setAiErrorType(null);
+      setAiErrorMessage('');
+
+      const analysis = await generateAIAnalysis(
+        detailedAnswers,
+        categoryScores,
+        result,
+        userData?.name
+      );
+      setAiAnalysis(analysis);
+      setCanRetryAI(false);
+    } catch (error) {
+      console.error('Error al generar análisis con IA:', error);
+      setAiError(true);
+
+      if (error instanceof AIServiceError) {
+        setAiErrorType(error.type);
+        setAiErrorMessage(error.message);
+        setCanRetryAI(
+          error.type === AIAnalysisError.NETWORK_ERROR ||
+          error.type === AIAnalysisError.RATE_LIMIT
+        );
+      } else {
+        setAiErrorMessage('Error inesperado al generar el análisis.');
+        setCanRetryAI(true);
+      }
+
+      setAiAnalysis(getFallbackInterpretation());
+    } finally {
+      setIsLoadingAI(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAIAnalysis();
+  }, []);
+
+  // Función para generar 3 pasos concretos para mejorar el día
+  const getDailyTips = () => {
+    const { scoreEstres, scoreAnimo, scoreControl } = categoryScores;
+
+    const stressTips = [
+      'Establece rutinas diarias estructuradas que incluyan horarios fijos de descanso, alimentación y actividad física',
+      'Practica respiración diafragmática o técnicas de respiración 4-7-8 para reducir la activación del sistema simpático',
+      'Introduce pausas breves de atención plena durante el día (mindfulness de 3 minutos)',
+      'Evita la sobreexposición a estímulos estresantes, como redes sociales o noticias negativas',
+      'Realiza actividad física aeróbica regular (al menos 30 minutos diarios)',
+      'Duerme entre 7 y 8 horas por noche, evitando el uso de pantallas una hora antes de dormir',
+      'Aliméntate equilibradamente, priorizando alimentos ricos en triptófano, magnesio y omega-3',
+      'Evita el consumo excesivo de cafeína, alcohol o tabaco',
+      'Establece límites claros entre trabajo y vida personal, reservando espacios de desconexión',
+      'Aprende a reconocer señales corporales tempranas de estrés (tensión muscular, taquicardia) y responde con técnicas de relajación inmediata'
+    ];
+
+    const animoTips = [
+      'Realiza actividades placenteras o creativas, aunque inicialmente no generen disfrute, para reentrenar el circuito de recompensa',
+      'Practica gratitud diaria escribiendo tres cosas positivas al finalizar el día',
+      'Mantén vínculos sociales significativos y pide apoyo emocional cuando sea necesario',
+      'Desarrolla autocompasión mediante ejercicios de diálogo interno amable y no crítico',
+      'Dedica tiempo diario a actividades contemplativas o relajantes (pasear, leer, escuchar música o meditar)',
+      'Establece metas realistas y alcanzables, dividiendo las tareas complejas en pasos pequeños para favorecer la sensación de logro'
+    ];
+
+    const controlTips = [
+      'Identifica pensamientos automáticos negativos y cuestiona su veracidad mediante reestructuración cognitiva',
+      'Utiliza técnicas de anclaje sensorial (focalizarse en un estímulo del entorno) para regresar al presente durante episodios de rumiación',
+      'Monitorea tu propio estado emocional y registra desencadenantes para reconocer patrones de pensamiento repetitivo'
+    ];
+
+    // Determinar las áreas más problemáticas
+    const areas = [
+      { name: 'estres', score: scoreEstres, max: 9, tips: stressTips },
+      { name: 'animo', score: scoreAnimo, max: 9, tips: animoTips },
+      { name: 'control', score: scoreControl, max: 12, tips: controlTips }
+    ];
+
+    // Ordenar por porcentaje (score/max) descendente
+    areas.sort((a, b) => (b.score / b.max) - (a.score / a.max));
+
+    // Seleccionar tips según la prioridad de las áreas
+    const selectedTips: string[] = [];
+
+    // Obtener el área más problemática
+    const topArea = areas[0];
+    const secondArea = areas[1];
+    const thirdArea = areas[2];
+
+    // Si el área más crítica tiene un score significativo (>33% de su máximo), tomar 2 tips de ella
+    if (topArea.score / topArea.max > 0.33) {
+      // Tomar 2 tips aleatorios del área más crítica
+      const shuffled = [...topArea.tips].sort(() => Math.random() - 0.5);
+      selectedTips.push(shuffled[0], shuffled[1]);
+
+      // Tomar 1 tip del segunda área más crítica
+      if (secondArea.score / secondArea.max > 0.2) {
+        const shuffled2 = [...secondArea.tips].sort(() => Math.random() - 0.5);
+        selectedTips.push(shuffled2[0]);
+      } else {
+        // Si la segunda área es baja, tomar otro del área principal
+        selectedTips.push(shuffled[2] || shuffled[0]);
+      }
+    } else {
+      // Si todas las áreas están relativamente equilibradas, tomar 1 de cada
+      selectedTips.push(
+        topArea.tips[Math.floor(Math.random() * topArea.tips.length)],
+        secondArea.tips[Math.floor(Math.random() * secondArea.tips.length)],
+        thirdArea.tips[Math.floor(Math.random() * thirdArea.tips.length)]
+      );
+    }
+
+    return selectedTips;
+  };
+
+  // Función de respaldo si falla la IA
+  const getFallbackInterpretation = () => {
     const { scoreEstres, scoreAnimo, scoreControl } = categoryScores;
 
     // Analizar respuestas específicas por pregunta
@@ -205,9 +335,9 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
 
     // Generar interpretación personalizada basada en respuestas específicas
     let interpretation = '';
-    let focusAreas: string[] = [];
-    let strengths: string[] = [];
-    let specificInsights: string[] = [];
+    const focusAreas: string[] = [];
+    const strengths: string[] = [];
+    const specificInsights: string[] = [];
 
     // === ANÁLISIS DE ESTRÉS/ANSIEDAD (Preguntas 1-3) ===
     const preocupacion = getAnswer(1); // Preocupación/concentración
@@ -217,31 +347,37 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
     if (estresLevel === 'critical') {
       interpretation += 'Tu nivel de estrés y ansiedad está significativamente elevado. ';
 
-      if (preocupacion >= 2) {
-        specificInsights.push('Mencionas que las preocupaciones te impiden concentrarte, lo cual afecta tu productividad y capacidad de estar presente');
-      }
-      if (relajacion >= 2) {
-        specificInsights.push('Te cuesta desconectar y relajarte incluso en tus momentos libres, lo que impide la recuperación necesaria');
-      }
-      if (irritabilidad >= 2) {
-        specificInsights.push('La irritabilidad frecuente puede estar afectando tus relaciones y aumentando tu nivel de tensión general');
+      // Consolidar insights en lugar de agregar múltiples items
+      const stressSymptoms = [];
+      if (preocupacion >= 2) stressSymptoms.push('preocupaciones constantes');
+      if (relajacion >= 2) stressSymptoms.push('dificultad para relajarte');
+      if (irritabilidad >= 2) stressSymptoms.push('irritabilidad frecuente');
+
+      if (stressSymptoms.length > 0) {
+        specificInsights.push(`Experimentas ${stressSymptoms.join(', ')}, lo que está afectando tu bienestar diario`);
       }
 
-      focusAreas.push('Técnicas inmediatas de regulación del sistema nervioso (respiración, grounding)');
-      focusAreas.push('Manejo de preocupaciones excesivas y pensamientos ansiosos');
+      focusAreas.push('Técnicas de regulación del sistema nervioso y manejo de preocupaciones');
     } else if (estresLevel === 'warning') {
-      interpretation += 'Experimentas niveles moderados de estrés que requieren atención. ';
+      interpretation += 'Experimentas niveles moderados de estrés y ansiedad que, aunque no son severos, representan señales de alerta temprana importantes. ';
 
-      if (preocupacion >= 2) {
-        specificInsights.push('Las preocupaciones están comenzando a afectar tu concentración');
-      }
-      if (relajacion >= 2) {
-        specificInsights.push('Notas dificultad para desconectar y relajarte plenamente');
+      const stressSymptoms = [];
+      if (preocupacion >= 2) stressSymptoms.push('preocupaciones frecuentes que afectan tu concentración');
+      if (relajacion >= 2) stressSymptoms.push('dificultad significativa para desconectar y relajarte');
+      if (preocupacion >= 1 && preocupacion < 2) stressSymptoms.push('preocupaciones ocasionales');
+      if (relajacion >= 1 && relajacion < 2) stressSymptoms.push('cierta dificultad para relajarte completamente');
+
+      if (stressSymptoms.length > 0) {
+        specificInsights.push(`Identifico ${stressSymptoms.join(', ')}. Estos patrones, si se mantienen, pueden evolucionar hacia ansiedad crónica o agotamiento`);
       }
 
-      focusAreas.push('Estrategias preventivas de manejo del estrés y ansiedad');
+      focusAreas.push('Técnicas de regulación del sistema nervioso (respiración diafragmática, relajación muscular progresiva)');
+      focusAreas.push('Estrategias de gestión preventiva del estrés y establecimiento de límites saludables');
     } else if (estresLevel === 'good') {
       strengths.push('Manejas bien el estrés cotidiano y mantienes la calma bajo presión');
+      if (preocupacion === 0 && relajacion === 0 && irritabilidad === 0) {
+        specificInsights.push('Tu capacidad para mantenerte calmado/a y concentrado/a es una fortaleza importante');
+      }
     }
 
     // === ANÁLISIS DE ÁNIMO/ANHEDONIA (Preguntas 4-6) ===
@@ -252,32 +388,44 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
     if (animoLevel === 'critical') {
       interpretation += 'Tu estado de ánimo muestra señales importantes que requieren atención. ';
 
-      if (interes >= 2) {
-        specificInsights.push('Has perdido interés en actividades que antes disfrutabas, una señal clara de anhedonia');
-        focusAreas.push('Activación conductual: retomar actividades placenteras de forma gradual');
+      const moodSymptoms = [];
+      if (interes >= 2) moodSymptoms.push('pérdida de interés');
+      if (tristeza >= 2) moodSymptoms.push('tristeza frecuente');
+      if (sueno >= 2) moodSymptoms.push('problemas de sueño');
+
+      if (moodSymptoms.length > 0) {
+        specificInsights.push(`Presentas ${moodSymptoms.join(', ')}, lo que impacta tu energía y bienestar emocional`);
       }
-      if (tristeza >= 2) {
-        specificInsights.push('Experimentas tristeza o decaimiento frecuente que afecta tu día a día');
-        focusAreas.push('Regulación emocional y procesamiento de emociones difíciles');
-      }
+
+      focusAreas.push('Activación conductual y regulación emocional');
       if (sueno >= 2) {
-        specificInsights.push('Los problemas de sueño están afectando tu recuperación física y emocional');
-        focusAreas.push('Higiene del sueño y rutinas de descanso reparador');
+        focusAreas.push('Mejora de la higiene del sueño');
       }
     } else if (animoLevel === 'warning') {
-      interpretation += 'Tu estado de ánimo presenta fluctuaciones que merecen atención. ';
+      interpretation += 'Tu estado de ánimo presenta fluctuaciones significativas que indican una fase de vulnerabilidad emocional. ';
 
+      const moodSymptoms = [];
+      if (interes >= 2) moodSymptoms.push('pérdida notable de interés o placer en actividades que antes disfrutabas');
+      if (interes >= 1 && interes < 2) moodSymptoms.push('disminución del disfrute en ciertas actividades');
+      if (tristeza >= 2) moodSymptoms.push('episodios frecuentes de tristeza o desánimo');
+      if (tristeza >= 1 && tristeza < 2) moodSymptoms.push('momentos de bajón emocional');
+      if (sueno >= 2) moodSymptoms.push('alteraciones importantes del sueño que afectan tu energía diaria');
+      if (sueno >= 1 && sueno < 2) moodSymptoms.push('irregularidades en el patrón de sueño');
+
+      if (moodSymptoms.length > 0) {
+        specificInsights.push(`Observo ${moodSymptoms.join(', ')}. La anhedonia (pérdida de capacidad para sentir placer) y el bajo ánimo sostenidos son factores de riesgo para depresión si no se abordan`);
+      }
+
+      focusAreas.push('Activación conductual: retomar actividades placenteras de forma gradual y estructurada');
+      focusAreas.push('Higiene del sueño y rutinas que favorezcan la regulación del estado de ánimo');
       if (interes >= 1) {
-        specificInsights.push('Notas cierta disminución en el disfrute de tus actividades habituales');
+        focusAreas.push('Reconexión con fuentes de significado y propósito personal');
       }
-      if (sueno >= 2) {
-        specificInsights.push('El sueño irregular está afectando tu energía y bienestar');
-        focusAreas.push('Mejora de hábitos de sueño y descanso');
-      }
-
-      focusAreas.push('Cultivo de emociones positivas y actividades significativas');
     } else if (animoLevel === 'good') {
       strengths.push('Mantienes un buen estado de ánimo y motivación en tu día a día');
+      if (interes === 0 && tristeza === 0) {
+        specificInsights.push('Tu capacidad para mantener el interés y disfrutar de la vida es una gran fortaleza');
+      }
     }
 
     // === ANÁLISIS DE CONTROL COGNITIVO (Preguntas 7-10) ===
@@ -289,93 +437,113 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
     if (controlLevel === 'critical') {
       interpretation += 'Tu control sobre pensamientos y emociones está significativamente comprometido. ';
 
-      if (rumiacion >= 2) {
-        specificInsights.push('Das muchas vueltas a los mismos pensamientos sin llegar a soluciones, lo que aumenta tu malestar');
-        focusAreas.push('Técnicas de defusión cognitiva para romper ciclos de rumiación');
+      const cognitiveSymptoms = [];
+      if (rumiacion >= 2) cognitiveSymptoms.push('rumiación');
+      if (autocritica >= 2) cognitiveSymptoms.push('autocrítica');
+      if (evitacion >= 2) cognitiveSymptoms.push('evitación');
+      if (regulacion >= 2) cognitiveSymptoms.push('dificultad para regular emociones');
+
+      if (cognitiveSymptoms.length > 0) {
+        specificInsights.push(`Experimentas ${cognitiveSymptoms.join(', ')}, patrones que aumentan tu malestar`);
       }
+
+      focusAreas.push('Técnicas de defusión cognitiva y regulación emocional');
       if (autocritica >= 2) {
-        specificInsights.push('Los pensamientos autocríticos ("no estoy a la altura") erosionan tu confianza y bienestar');
-        focusAreas.push('Trabajo en autocompasión y reestructuración de pensamientos negativos');
-      }
-      if (evitacion >= 2) {
-        specificInsights.push('La evitación de actividades importantes por malestar emocional limita tu vida');
-        focusAreas.push('Exposición gradual y tolerancia al malestar emocional');
-      }
-      if (regulacion >= 2) {
-        specificInsights.push('Te sientes desbordado/a por tus emociones cuando aparecen');
-        focusAreas.push('Herramientas de regulación emocional en tiempo real');
+        focusAreas.push('Trabajo en autocompasión');
       }
     } else if (controlLevel === 'warning') {
-      interpretation += 'Tu control cognitivo muestra algunos desafíos que conviene abordar. ';
+      interpretation += 'Tu control sobre pensamientos y emociones muestra desafíos significativos que impactan tu bienestar diario. ';
 
-      if (rumiacion >= 2) {
-        specificInsights.push('Tiendes a darle vueltas a tus preocupaciones más de lo que te gustaría');
-        focusAreas.push('Mindfulness y técnicas para soltar pensamientos repetitivos');
+      const cognitiveSymptoms = [];
+      if (rumiacion >= 2) cognitiveSymptoms.push('rumiación frecuente (dar vueltas a los mismos pensamientos sin resolución)');
+      if (rumiacion >= 1 && rumiacion < 2) cognitiveSymptoms.push('tendencia ocasional a rumiar pensamientos');
+      if (autocritica >= 2) cognitiveSymptoms.push('autocrítica severa y pensamientos de inadecuación');
+      if (autocritica >= 1 && autocritica < 2) cognitiveSymptoms.push('pensamientos autocríticos');
+      if (evitacion >= 2) cognitiveSymptoms.push('evitación marcada de situaciones o actividades importantes');
+      if (evitacion >= 1 && evitacion < 2) cognitiveSymptoms.push('cierta tendencia a evitar situaciones desafiantes');
+      if (regulacion >= 2) cognitiveSymptoms.push('dificultad significativa para regular emociones intensas');
+      if (regulacion >= 1 && regulacion < 2) cognitiveSymptoms.push('desafíos en el manejo de emociones difíciles');
+
+      if (cognitiveSymptoms.length > 0) {
+        specificInsights.push(`Identifico ${cognitiveSymptoms.join(', ')}. Estos patrones cognitivos no solo generan malestar, sino que pueden perpetuar ciclos de ansiedad y bajo ánimo al limitar tu capacidad de respuesta efectiva`);
       }
+
+      focusAreas.push('Técnicas de defusión cognitiva y mindfulness para desengancharse de pensamientos negativos');
+      focusAreas.push('Desarrollo de flexibilidad cognitiva y reestructuración de pensamientos disfuncionales');
       if (autocritica >= 1) {
-        specificInsights.push('Aparecen pensamientos autocríticos que afectan tu autoconfianza');
+        focusAreas.push('Cultivo de autocompasión y diálogo interno más constructivo');
       }
-
-      focusAreas.push('Fortalecimiento del control atencional y flexibilidad cognitiva');
+      if (evitacion >= 1) {
+        focusAreas.push('Exposición gradual y tolerancia al malestar emocional');
+      }
     } else if (controlLevel === 'good') {
       strengths.push('Tienes buen control sobre tus pensamientos y manejas bien tus preocupaciones');
+      if (rumiacion === 0 && autocritica === 0) {
+        specificInsights.push('Tu claridad mental y autoconfianza son recursos valiosos para tu bienestar');
+      }
     }
 
     // === CONSTRUIR MENSAJE FINAL ===
     let finalMessage = '';
-    const userName = userData?.name ? `${userData.name}, ` : '';
+    const userName = firstName ? `${firstName}, ` : '';
 
     if (mostCritical.level === 'critical') {
       finalMessage = `${userName}basándome en tus respuestas, tu área de mayor preocupación es ${mostCritical.name} (puntaje: ${mostCritical.score}/${mostCritical.max}). `;
       finalMessage += interpretation;
 
+      // Limitar a máximo 3 insights específicos para evitar texto excesivo
       if (specificInsights.length > 0) {
-        finalMessage += '\n\nEspecíficamente, observo lo siguiente en tus respuestas:\n\n';
-        specificInsights.forEach(insight => {
-          finalMessage += `• ${insight}\n`;
-        });
+        const topInsights = specificInsights.slice(0, 3);
+        finalMessage += '\n\nObservo en tus respuestas: ' + topInsights.join('; ') + '.';
       }
 
       if (secondMostCritical.level === 'critical' || secondMostCritical.level === 'warning') {
-        finalMessage += `\n\nAdemás, tu ${secondMostCritical.name} también requiere atención (${secondMostCritical.score}/${secondMostCritical.max}).`;
+        finalMessage += ` También tu ${secondMostCritical.name} requiere atención (${secondMostCritical.score}/${secondMostCritical.max}).`;
       }
 
       if (strengths.length > 0) {
-        finalMessage += `\n\nComo aspectos positivos, ${strengths.join(' y ')}, lo cual es una base sólida sobre la que construir.`;
+        finalMessage += `\n\nComo aspectos positivos, ${strengths.join(' y ')}, lo cual es una base sólida para tu recuperación.`;
       }
     } else if (mostCritical.level === 'warning') {
-      finalMessage = `${userName}${interpretation.charAt(0).toLowerCase()}${interpretation.slice(1)}`;
+      // Para nivel amarillo, mantener análisis conciso (máximo 150 palabras)
+      finalMessage = `${userName}tus resultados indican que te encuentras en una fase de alerta temprana - un momento crítico donde la intervención preventiva es más efectiva.\n\n`;
+
+      finalMessage += `Tu área principal de preocupación es ${mostCritical.name} (puntaje: ${mostCritical.score}/${mostCritical.max}). `;
+      finalMessage += interpretation;
 
       if (specificInsights.length > 0) {
-        finalMessage += '\n\nEn tus respuestas noto que:\n\n';
-        specificInsights.forEach(insight => {
-          finalMessage += `• ${insight}\n`;
-        });
+        const topInsight = specificInsights[0];
+        finalMessage += '\n\nLo que observo específicamente: ' + topInsight;
       }
+
+      // Mensaje educativo breve sobre importancia de actuar
+      finalMessage += '\n\n¿Por qué es importante actuar ahora? Estás en la "ventana óptima de intervención". Tus síntomas aún no se han cronificado, lo que significa que responderás más rápidamente a estrategias terapéuticas.';
+
+      if (secondMostCritical.level === 'warning') {
+        finalMessage += ` También identifico desafíos en ${secondMostCritical.name} (${secondMostCritical.score}/${secondMostCritical.max}).`;
+      }
+
+      finalMessage += '\n\nEl momento de actuar es ahora. Los síntomas que experimentas son reversibles, pero requieren atención consciente y estrategias específicas.';
+    } else {
+      finalMessage = `${userName}tus respuestas muestran un buen equilibrio emocional general. `;
 
       if (strengths.length > 0) {
-        finalMessage += `\n\nTus fortalezas incluyen: ${strengths.join(' y ')}.`;
+        finalMessage += strengths.join(', ') + '. ';
       }
-    } else {
-      finalMessage = `${userName}tus respuestas muestran un buen equilibrio emocional general. ` + strengths.join(', ') + '. ';
 
       if (specificInsights.length > 0) {
-        finalMessage += '\n\nAlgunas observaciones de tus respuestas:\n\n';
-        specificInsights.forEach(insight => {
-          finalMessage += `• ${insight}\n`;
-        });
+        finalMessage += 'Además, ' + specificInsights.join(', ') + '. ';
       }
 
-      finalMessage += '\n\nSin embargo, siempre hay espacio para crecer y fortalecer tus capacidades de bienestar.';
+      finalMessage += '\n\nMantener y fortalecer tu bienestar actual te ayudará a desarrollar resiliencia y enfrentar desafíos futuros con mayor confianza. Considera este programa como una oportunidad para potenciar tus capacidades y prevenir futuros problemas.';
     }
 
     // === GENERAR CONSECUENCIAS DE NO ACTUAR ===
-    let consequences: string[] = [];
+    const consequences: string[] = [];
 
     // Identificar áreas problemáticas para agrupar consecuencias
     const hasStressIssues = estresLevel === 'critical' || estresLevel === 'warning';
     const hasMoodIssues = animoLevel === 'critical' || animoLevel === 'warning';
-    const hasControlIssues = controlLevel === 'critical' || controlLevel === 'warning';
 
     // Contar síntomas activos para determinar la severidad
     const activeSymptoms = [
@@ -384,60 +552,50 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
       rumiacion >= 2, autocritica >= 2, evitacion >= 2, regulacion >= 2
     ].filter(Boolean).length;
 
-    // Agrupar consecuencias por área de impacto según el área más crítica
+    // Agrupar consecuencias de manera más concisa - máximo 3 items para todos los niveles
     if (mostCritical.level === 'critical') {
-      // Salud mental y física
-      if (hasStressIssues && (preocupacion >= 2 || relajacion >= 2)) {
-        consequences.push('El estrés sostenido puede evolucionar a trastornos de ansiedad severos, burnout, y problemas de salud física como hipertensión o problemas cardiovasculares');
+      // Consolidar consecuencias de salud mental y física
+      const healthImpacts = [];
+      if (hasStressIssues) healthImpacts.push('ansiedad severa o burnout');
+      if (hasMoodIssues) healthImpacts.push('depresión clínica');
+      if (healthImpacts.length > 0) {
+        consequences.push(`Los síntomas pueden evolucionar a ${healthImpacts.join(' y ')}, afectando tu salud física y mental`);
       }
 
-      // Estado de ánimo y depresión
-      if (hasMoodIssues && (interes >= 2 || tristeza >= 2)) {
-        consequences.push('La pérdida de interés y tristeza persistente pueden profundizarse hasta una depresión clínica que afecte todas las áreas de tu vida');
+      // Impacto en relaciones y funcionalidad
+      if (activeSymptoms >= 3) {
+        consequences.push('Deterioro en relaciones personales, rendimiento laboral y capacidad para funcionar en la vida diaria');
       }
 
-      // Relaciones y vida social
-      if ((irritabilidad >= 2 || evitacion >= 2) && activeSymptoms >= 3) {
-        consequences.push('El aislamiento progresivo y los conflictos interpersonales pueden llevar a la pérdida de relaciones importantes y redes de apoyo');
-      }
-
-      // Funcionamiento cognitivo
-      if ((rumiacion >= 2 || autocritica >= 2 || sueno >= 2) && activeSymptoms >= 3) {
-        consequences.push('El deterioro cognitivo y emocional puede resultar en dificultades para mantener trabajo estable, tomar decisiones, y funcionar en la vida diaria');
-      }
-
-      // Mensaje de cierre crítico
-      consequences.push('Sin intervención, estos síntomas se intensificarán y el proceso de recuperación será más largo y difícil');
+      // Mensaje de cierre
+      consequences.push('Sin intervención, la recuperación será más larga y difícil. Actuar ahora es fundamental');
     } else if (mostCritical.level === 'warning') {
-      // Para nivel de advertencia, consolidar en máximo 3 consecuencias
-      if (hasStressIssues || hasMoodIssues) {
-        consequences.push('Los síntomas actuales pueden escalar a problemas de ansiedad o depresión más severos que afecten tu salud física y rendimiento');
+      // Para nivel de advertencia, 3-4 consecuencias detalladas
+      if (hasStressIssues) {
+        consequences.push('El estrés sostenido puede evolucionar hacia trastornos de ansiedad, ataques de pánico, o agotamiento crónico. Además, aumenta el riesgo de problemas cardiovasculares y debilita tu sistema inmunológico');
+      }
+
+      if (hasMoodIssues) {
+        consequences.push('La anhedonia y el bajo ánimo persistentes son precursores de depresión clínica. Sin intervención, estos síntomas tienden a profundizarse, afectando gravemente tu calidad de vida y funcionamiento');
       }
 
       if ((irritabilidad >= 2 || evitacion >= 2 || regulacion >= 2)) {
-        consequences.push('Las dificultades emocionales pueden deteriorar tus relaciones personales y laborales, limitando tu calidad de vida');
+        consequences.push('Los patrones de evitación, irritabilidad y dificultad para regular emociones deterioran progresivamente tus relaciones personales, rendimiento laboral y autoestima. Esto crea un ciclo de aislamiento y mayor malestar');
       }
 
-      consequences.push('Actuar ahora es más fácil que esperar: prevenir requiere menos tiempo y esfuerzo que revertir un deterioro mayor');
+      consequences.push('Actuar en esta fase temprana es 3-4 veces más efectivo que esperar. La neuroplasticidad cerebral favorece cambios rápidos cuando los patrones aún no están fuertemente consolidados. Posponer la intervención significa mayor sufrimiento y recuperación más larga');
     } else {
-      // Nivel moderado o bueno - mensaje preventivo breve
-      if (activeSymptoms > 0) {
-        consequences.push('Aunque tu situación es manejable, sin atención estos síntomas pueden evolucionar y afectar tu bienestar a largo plazo');
-      }
+      // Nivel moderado o bueno - 2 consecuencias preventivas
+      consequences.push('Sin atención preventiva, pequeños síntomas pueden evolucionar y afectar tu bienestar futuro');
+      consequences.push('Invertir en tu salud mental ahora te ayudará a desarrollar resiliencia ante futuros desafíos');
     }
 
     return {
-      message: finalMessage,
-      focusAreas: [...new Set(focusAreas)], // Eliminar duplicados
-      strengths,
-      specificInsights,
-      consequences: [...new Set(consequences)], // Eliminar duplicados
-      mostCritical: mostCritical.name,
-      criticalScore: `${mostCritical.score}/${mostCritical.max}`
+      interpretation: finalMessage,
+      actionPlan: [...new Set(focusAreas)].slice(0, 3), // Eliminar duplicados y limitar a 3
+      consequences: [...new Set(consequences)] // Eliminar duplicados
     };
   };
-
-  const interpretation = getPersonalizedInterpretation();
 
   useEffect(() => {
     const submitResults = async () => {
@@ -489,7 +647,7 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
 
           {/* Headline */}
           <h1 className="text-3xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight max-w-4xl mx-auto">
-            {userData?.name && <span className="block mb-2 text-2xl md:text-3xl text-gray-700">Hola {userData.name},</span>}
+            {firstName && <span className="block mb-2 text-2xl md:text-3xl text-gray-700">Hola {firstName},</span>}
             {config.headline}
           </h1>
 
@@ -509,84 +667,318 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
         <div className={`${config.cardBg} rounded-3xl shadow-xl p-8 md:p-12 mb-12 border-2 ${config.borderColor || 'border-gray-200'}`}>
           <div className="flex items-start space-x-4 mb-6">
             <div className={`flex-shrink-0 w-16 h-16 ${config.iconBg} rounded-2xl flex items-center justify-center`}>
-              <IconComponent className={`w-8 h-8 ${config.accentColor}`} />
+              {isLoadingAI ? (
+                <Loader2 className={`w-8 h-8 ${config.accentColor} animate-spin`} />
+              ) : (
+                <Sparkles className={`w-8 h-8 ${config.accentColor}`} />
+              )}
             </div>
             <div>
               <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
-                {userData?.name ? `${userData.name}, ¿qué significan tus resultados?` : '¿Qué significan tus resultados?'}
+                ¿Qué significan tus resultados?
               </h2>
-              <p className="text-gray-600">Interpretación personalizada basada en tu perfil emocional</p>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl p-6 md:p-8 mb-6">
-            <div className="prose prose-lg max-w-none">
-              {interpretation.message.split('\n\n').map((paragraph, index) => (
-                <p key={index} className="text-gray-700 leading-relaxed mb-4 last:mb-0 text-justify">
-                  {paragraph}
-                </p>
-              ))}
-            </div>
-          </div>
-
-          {interpretation.focusAreas.length > 0 && (
-            <div className="bg-white rounded-2xl p-6 md:p-8 mb-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                <Target className={`w-6 h-6 mr-2 ${config.accentColor}`} />
-                {userData?.name ? `${userData.name}, tu plan de acción personalizado` : 'Tu plan de acción personalizado'}
-              </h3>
-              <ul className="space-y-3">
-                {interpretation.focusAreas.map((area, index) => (
-                  <li key={index} className="flex items-start space-x-3">
-                    <span className={`flex-shrink-0 w-6 h-6 ${config.iconBg} ${config.accentColor} rounded-full flex items-center justify-center text-sm font-bold`}>
-                      {index + 1}
-                    </span>
-                    <span className="text-gray-700 pt-0.5 text-justify">{area}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {interpretation.consequences.length > 0 && (
-            <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-2xl p-6 md:p-8 border-2 border-red-200">
-              <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                <AlertTriangle className="w-6 h-6 mr-2 text-red-600" />
-                ¿Qué puede pasar si no tomas acción?
-              </h3>
-              <p className="text-gray-700 mb-4 font-medium text-justify">
-                {userData?.name ? `${userData.name}, basándome` : 'Basándome'} en tus respuestas específicas, estas son las posibles consecuencias de no abordar tu situación actual:
+              <p className="text-gray-600">
+                {isLoadingAI ? 'Generando análisis personalizado con IA...' : 'Análisis personalizado generado con inteligencia artificial'}
               </p>
-              <ul className="space-y-3">
-                {interpretation.consequences.map((consequence, index) => (
-                  <li key={index} className="flex items-start space-x-3">
-                    <span className="flex-shrink-0 w-6 h-6 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-sm font-bold mt-0.5">
-                      !
-                    </span>
-                    <span className="text-gray-700 leading-relaxed text-justify">{consequence}</span>
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-6 p-4 bg-white rounded-xl border-l-4 border-red-500">
-                <p className="text-gray-800 font-semibold text-justify">
-                  La buena noticia: Todo esto es prevenible y reversible con el apoyo adecuado.
-                </p>
-                <p className="text-gray-600 mt-2 text-justify">
-                  Actuar ahora significa elegir un camino más corto y menos doloroso hacia tu bienestar.
-                </p>
-              </div>
             </div>
-          )}
+          </div>
+
+          {isLoadingAI ? (
+            <div className="bg-white rounded-2xl p-8 flex flex-col items-center justify-center min-h-[200px]">
+              <Loader2 className="w-12 h-12 text-blue-600 animate-spin mb-4" />
+              <p className="text-gray-600 text-center">
+                Analizando tus respuestas con inteligencia artificial para ofrecerte un diagnóstico personalizado...
+              </p>
+            </div>
+          ) : aiAnalysis ? (
+            <>
+              <div className="bg-white rounded-2xl p-6 md:p-8 mb-6">
+                <div className="prose prose-lg max-w-none">
+                  {aiAnalysis.interpretation.split('\n\n').map((paragraph, index) => (
+                    <p key={index} className="text-gray-700 leading-relaxed mb-4 last:mb-0 text-justify">
+                      {paragraph}
+                    </p>
+                  ))}
+                </div>
+              </div>
+
+              {aiAnalysis.actionPlan.length > 0 && (
+                <div className="bg-white rounded-2xl p-6 md:p-8 mb-6">
+                  <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                    <Target className={`w-6 h-6 mr-2 ${config.accentColor}`} />
+                    Tu plan de acción personalizado
+                  </h3>
+                  <ul className="space-y-3">
+                    {aiAnalysis.actionPlan.slice(0, 3).map((area, index) => (
+                      <li key={index} className="flex items-start space-x-3">
+                        <span className={`flex-shrink-0 w-6 h-6 ${config.iconBg} ${config.accentColor} rounded-full flex items-center justify-center text-sm font-bold`}>
+                          {index + 1}
+                        </span>
+                        <span className="text-gray-700 pt-0.5 text-justify">{area}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {result !== 'green' && aiAnalysis.consequences.length > 0 && (
+                <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-2xl p-6 md:p-8 border-2 border-red-200">
+                  <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                    <AlertTriangle className="w-6 h-6 mr-2 text-red-600" />
+                    ¿Qué puede pasar si no tomas acción?
+                  </h3>
+                  <p className="text-gray-700 mb-4 font-medium text-justify">
+                    Basándome en tus respuestas específicas, estas son las posibles consecuencias de no abordar tu situación actual:
+                  </p>
+                  <ul className="space-y-3">
+                    {aiAnalysis.consequences.map((consequence, index) => (
+                      <li key={index} className="flex items-start space-x-3">
+                        <span className="flex-shrink-0 w-6 h-6 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-sm font-bold mt-0.5">
+                          !
+                        </span>
+                        <span className="text-gray-700 leading-relaxed text-justify">{consequence}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="mt-6 p-4 bg-white rounded-xl border-l-4 border-red-500">
+                    <p className="text-gray-800 font-semibold text-justify">
+                      La buena noticia: Todo esto es prevenible y reversible con el apoyo adecuado.
+                    </p>
+                    <p className="text-gray-600 mt-2 text-justify">
+                      Actuar ahora significa elegir un camino más corto y menos doloroso hacia tu bienestar.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {aiError && aiErrorType !== AIAnalysisError.MISSING_API_KEY && (
+                <div className="rounded-2xl p-4 border mb-6 bg-yellow-50 border-yellow-200">
+                  <div className="flex items-start space-x-3">
+                    <AlertTriangle className="w-5 h-5 mt-0.5 flex-shrink-0 text-yellow-600" />
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold mb-1 text-yellow-800">
+                        Análisis de respaldo utilizado
+                      </p>
+                      <p className="text-sm mb-2 text-yellow-700">
+                        {aiErrorMessage} Se utilizó nuestro sistema de análisis de respaldo, igualmente preciso y personalizado.
+                      </p>
+                      {canRetryAI && (
+                        <button
+                          onClick={fetchAIAnalysis}
+                          className="text-sm font-medium underline text-yellow-700 hover:text-yellow-800"
+                        >
+                          Intentar nuevamente con IA
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : null}
         </div>
 
-        {/* Value Proposition Section */}
+        {/* 3 Pasos Concretos para Mejorar tu Día */}
+        <div className="bg-gradient-to-br from-teal-50 via-blue-50 to-cyan-50 rounded-3xl shadow-xl p-8 md:p-12 mb-12 border-2 border-teal-200">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-teal-100 rounded-2xl mb-4">
+              <Sparkles className="w-8 h-8 text-teal-600" />
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
+              3 Pasos Concretos para Mejorar tu Día
+            </h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Basándonos en tus respuestas, estos son los pasos más relevantes que puedes implementar hoy mismo
+            </p>
+          </div>
+
+          <div className="max-w-4xl mx-auto space-y-6">
+            {getDailyTips().map((tip, index) => (
+              <div key={index} className="bg-white rounded-2xl p-6 shadow-md hover:shadow-lg transition-shadow duration-300">
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0">
+                    <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-xl flex items-center justify-center text-white text-xl font-bold shadow-md">
+                      {index + 1}
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-gray-800 leading-relaxed text-lg text-justify">
+                      {tip}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-8 text-center">
+            <div className="inline-flex items-center bg-white rounded-xl px-6 py-3 shadow-md">
+              <CheckCircle className="w-5 h-5 text-teal-600 mr-2" />
+              <span className="text-gray-700 font-medium">
+                Pequeños cambios diarios generan grandes transformaciones
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Transición Compasiva - Consejos a Programa */}
+        <div className={`rounded-3xl shadow-xl p-8 md:p-12 mb-12 ${
+          result === 'green' ? 'bg-gradient-to-br from-emerald-50 to-teal-50' :
+          result === 'yellow' ? 'bg-gradient-to-br from-yellow-50 to-amber-50' :
+          result === 'orange' ? 'bg-gradient-to-br from-orange-50 to-red-50' :
+          'bg-gradient-to-br from-red-50 to-pink-50'
+        }`}>
+          <div className="max-w-3xl mx-auto text-center">
+            <div className="mb-6">
+              <Heart className={`w-16 h-16 mx-auto mb-4 ${
+                result === 'green' ? 'text-emerald-600' :
+                result === 'yellow' ? 'text-yellow-600' :
+                result === 'orange' ? 'text-orange-600' :
+                'text-red-600'
+              }`} />
+            </div>
+
+            <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-6">
+              {result === 'green' && 'Sabemos que puedes hacer estos cambios por tu cuenta'}
+              {result === 'yellow' && 'Entendemos que implementar estos cambios puede ser desafiante'}
+              {result === 'orange' && 'Sabemos que en este momento todo puede sentirse abrumador'}
+              {result === 'red' && 'Entendemos que ahora mismo implementar cambios se siente imposible'}
+            </h3>
+
+            <p className="text-lg text-gray-700 leading-relaxed mb-6 text-justify">
+              {result === 'green' && 'Los tres consejos que te compartimos son herramientas valiosas que puedes comenzar a aplicar desde hoy. Sin embargo, sabemos que mantener el bienestar de forma sostenible en un ambiente laboral demandante requiere más que buenas intenciones: necesitas un sistema estructurado y acompañamiento profesional que te ayude a consolidar estos hábitos a largo plazo.'}
+
+              {result === 'yellow' && 'Los tres consejos que te compartimos son un excelente punto de partida, y es completamente válido si decides comenzar por tu cuenta. Sin embargo, la realidad es que cuando estamos en fase de alerta temprana, nuestro sistema nervioso ya está comprometido, lo que hace más difícil mantener la constancia y la motivación. El acompañamiento profesional multiplica significativamente tus probabilidades de éxito.'}
+
+              {result === 'orange' && 'Los consejos que te compartimos pueden ayudarte a dar pequeños pasos, pero reconocemos que cuando estás al límite, implementar cambios por tu cuenta requiere una energía y claridad mental que en este momento puede no estar disponible. No es falta de voluntad, es que tu sistema nervioso está sobrecargado y necesita apoyo especializado para recuperarse.'}
+
+              {result === 'red' && 'Los consejos que te compartimos son un primer paso de contención, pero queremos ser honestos contigo: cuando estás en sobrecarga emocional crítica, implementar cambios profundos por tu cuenta es extremadamente difícil y poco realista. No es culpa tuya, tu cerebro está en modo de supervivencia y necesitas apoyo profesional inmediato para salir de esta situación.'}
+            </p>
+
+            <div className={`rounded-2xl p-6 border-2 ${
+              result === 'green' ? 'bg-white border-emerald-300' :
+              result === 'yellow' ? 'bg-white border-yellow-300' :
+              result === 'orange' ? 'bg-white border-orange-300' :
+              'bg-white border-red-300'
+            }`}>
+              <p className="text-gray-800 leading-relaxed text-justify">
+                {result === 'green' && (
+                  <>
+                    <strong>Por eso diseñamos nuestro programa:</strong> No para decirte lo que ya sabes, sino para ayudarte a <strong>fortalecer lo que tienes</strong>, identificar vulnerabilidades antes de que se conviertan en problemas, y construir resiliencia sostenible con estrategias personalizadas y basadas en evidencia.
+                  </>
+                )}
+
+                {result === 'yellow' && (
+                  <>
+                    <strong>Por eso nuestro programa es diferente:</strong> No es solo información, es <strong>intervención temprana estructurada</strong>. Te ayudamos a detectar exactamente qué está fallando, comprender por qué está pasando, y revertirlo con acompañamiento profesional antes de que estos síntomas se vuelvan crónicos.
+                  </>
+                )}
+
+                {result === 'orange' && (
+                  <>
+                    <strong>Por eso nuestro programa prioriza el acompañamiento:</strong> Necesitas un espacio seguro donde <strong>un profesional especializado te ayude</strong> a regular tu sistema nervioso, recuperar el control emocional y desarrollar un plan de acción realista. No tienes que hacerlo solo/a, y no deberías.
+                  </>
+                )}
+
+                {result === 'red' && (
+                  <>
+                    <strong>Por eso te ofrecemos contención profesional inmediata:</strong> Necesitas que alguien con experiencia en crisis emocionales te ayude a <strong>estabilizar tu estado</strong>, comprender qué está pasando, y diseñar un camino de salida paso a paso. Este es el momento de pedir ayuda, no de intentar salir solo/a.
+                  </>
+                )}
+              </p>
+            </div>
+
+            <p className="text-gray-600 mt-6 italic">
+              {result === 'green' && 'Si decides que este es el momento de invertir en tu bienestar de forma profesional, estamos aquí para acompañarte.'}
+              {result === 'yellow' && 'Si sientes que necesitas más que consejos y quieres apoyo profesional estructurado, estamos aquí para ti.'}
+              {result === 'orange' && 'Si reconoces que necesitas apoyo especializado para recuperar el control, no estás solo/a. Estamos aquí.'}
+              {result === 'red' && 'No tienes que enfrentar esto solo/a. Estamos aquí para brindarte la contención y el apoyo que necesitas ahora mismo.'}
+            </p>
+          </div>
+        </div>
+
+        {/* Value Proposition Section - Personalizado por resultado */}
         <div className="bg-white rounded-3xl shadow-xl p-8 md:p-12 mb-12">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Programa de 4 Sesiones con Profesionales
-            </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto text-center">
-              Un plan breve, práctico y acompañado por especialistas que te guiarán paso a paso
+            {/* Título personalizado según resultado */}
+            {result === 'green' && (
+              <>
+                <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                  {firstName ? `${firstName}, m` : 'M'}antén y Potencia tu Bienestar con Origamis
+                </h2>
+                <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed mb-6">
+                  Sabemos que tienes un buen nivel de bienestar emocional, pero entendemos que <strong>mantener este estado</strong> requiere atención consciente. El estrés laboral y las demandas diarias pueden erosionar silenciosamente tu equilibrio actual.
+                </p>
+                <p className="text-lg text-gray-700 max-w-3xl mx-auto leading-relaxed">
+                  Nuestro programa diagnóstico de 4 sesiones está diseñado para <strong>fortalecer tus recursos actuales</strong> y prevenir el deterioro futuro, asegurando que tu bienestar sea sostenible a largo plazo.
+                </p>
+              </>
+            )}
+
+            {result === 'yellow' && (
+              <>
+                <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                  {firstName ? `${firstName}, e` : 'E'}stás en el Momento Ideal para Actuar
+                </h2>
+                <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed mb-6">
+                  Tus resultados muestran <strong>señales tempranas de alerta</strong>. El estrés sostenido, la sobrecarga o la falta de descanso mental que estás experimentando <strong>aún no se han consolidado</strong> en un cuadro clínico, lo que significa que tienes una ventana de oportunidad única.
+                </p>
+                <p className="text-lg text-gray-700 max-w-3xl mx-auto leading-relaxed">
+                  Nuestro programa diagnóstico de 4 sesiones está específicamente diseñado para <strong>detectar, comprender y revertir</strong> estos primeros signos antes de que se transformen en crisis. Intervenir ahora es 3-4 veces más efectivo que esperar.
+                </p>
+              </>
+            )}
+
+            {result === 'orange' && (
+              <>
+                <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                  {firstName ? `${firstName}, a` : 'A'}ún Estás a Tiempo de Recuperar el Control
+                </h2>
+                <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed mb-6">
+                  Tus resultados indican <strong>alta tensión emocional que requiere atención inmediata</strong>. Los síntomas que experimentas están cerca de consolidarse, pero <strong>aún son reversibles</strong> con la intervención correcta.
+                </p>
+                <p className="text-lg text-gray-700 max-w-3xl mx-auto leading-relaxed">
+                  Nuestro programa diagnóstico de 4 sesiones te ofrece la <strong>intervención especializada urgente</strong> que necesitas ahora para <strong>detectar, comprender y revertir</strong> el deterioro emocional antes de que se convierta en un cuadro clínico severo.
+                </p>
+              </>
+            )}
+
+            {result === 'red' && (
+              <>
+                <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                  {firstName ? `${firstName}, n` : 'N'}ecesitas Contención Inmediata
+                </h2>
+                <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed mb-6">
+                  Tus resultados muestran <strong>sobrecarga emocional crítica</strong>. Sabemos que te sientes abrumado/a y que necesitas apoyo profesional urgente. No tienes que enfrentar esto solo/a.
+                </p>
+                <p className="text-lg text-gray-700 max-w-3xl mx-auto leading-relaxed">
+                  Nuestro programa diagnóstico de 4 sesiones ofrece <strong>respuesta especializada a crisis emocionales</strong>, diseñado para brindarte contención inmediata, <strong>detectar con precisión</strong> tu estado actual y <strong>revertir el deterioro</strong> antes de que se consolide permanentemente.
+                </p>
+              </>
+            )}
+          </div>
+
+          {/* Propósito personalizado según resultado */}
+          <div className={`rounded-2xl p-8 mb-8 border-2 max-w-3xl mx-auto ${
+            result === 'green' ? 'bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200' :
+            result === 'yellow' ? 'bg-gradient-to-r from-yellow-50 to-amber-50 border-yellow-300' :
+            result === 'orange' ? 'bg-gradient-to-r from-orange-50 to-red-50 border-orange-300' :
+            'bg-gradient-to-r from-red-50 to-pink-50 border-red-300'
+          }`}>
+            <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">
+              {result === 'green' && 'Programa de Fortalecimiento Preventivo'}
+              {result === 'yellow' && 'Programa de Intervención Temprana'}
+              {result === 'orange' && 'Programa de Reversión Urgente'}
+              {result === 'red' && 'Programa de Contención y Recuperación'}
+            </h3>
+            <p className="text-gray-700 leading-relaxed text-justify">
+              {result === 'green' && 'Tu programa está diseñado para fortalecer tus recursos actuales, prevenir el deterioro futuro y desarrollar resiliencia sostenible. Evaluaremos tu perfil de estrés, ánimo, autocontrol y rumiación para potenciar lo que ya funciona bien y anticipar posibles vulnerabilidades.'}
+
+              {result === 'yellow' && 'Tu programa está específicamente diseñado para detectar y revertir las señales tempranas que identificamos en tu evaluación. Trabajaremos en regular tu estrés, restaurar tu ánimo, fortalecer tu autocontrol y reducir la rumiación, con estrategias prácticas adaptadas a tu perfil específico.'}
+
+              {result === 'orange' && 'Tu programa ofrece intervención especializada urgente para revertir los signos críticos detectados en tu evaluación. Nos enfocaremos en regular tu sistema nervioso, recuperar tu capacidad de control emocional, restaurar tu ánimo y frenar los patrones de rumiación, antes de que se consoliden.'}
+
+              {result === 'red' && 'Tu programa prioriza la contención inmediata y la reversión del deterioro crítico. Trabajaremos urgentemente en regular tu sobrecarga emocional, restaurar tu estabilidad, recuperar tu capacidad de funcionar y diseñar un plan de acción para salir de la crisis que estás experimentando.'}
             </p>
           </div>
 
@@ -598,6 +990,88 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
                 <p className="text-gray-600 text-justify">{benefit.text}</p>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* Urgency Message - Personalizado */}
+        {(result === 'yellow' || result === 'orange' || result === 'red') && (
+          <div className={`rounded-2xl p-6 mb-8 border-l-4 max-w-3xl mx-auto ${
+            result === 'yellow' ? 'bg-yellow-50 border-yellow-500' :
+            result === 'orange' ? 'bg-orange-50 border-orange-500' :
+            'bg-red-50 border-red-500'
+          }`}>
+            <div className="flex items-start space-x-4">
+              <div className="flex-shrink-0 mt-1">
+                {result === 'yellow' && <Clock className="w-8 h-8 text-yellow-600" />}
+                {result === 'orange' && <AlertTriangle className="w-8 h-8 text-orange-600" />}
+                {result === 'red' && <AlertCircle className="w-8 h-8 text-red-600" />}
+              </div>
+              <div>
+                <h3 className={`text-xl font-bold mb-2 ${
+                  result === 'yellow' ? 'text-yellow-900' :
+                  result === 'orange' ? 'text-orange-900' :
+                  'text-red-900'
+                }`}>
+                  {result === 'yellow' && 'Cada día que esperas, tus síntomas se consolidan más'}
+                  {result === 'orange' && 'Estás a un paso de una crisis: actúa ahora'}
+                  {result === 'red' && 'Necesitas ayuda profesional urgente hoy'}
+                </h3>
+                <p className={`${
+                  result === 'yellow' ? 'text-yellow-800' :
+                  result === 'orange' ? 'text-orange-800' :
+                  'text-red-800'
+                } leading-relaxed`}>
+                  {result === 'yellow' && 'Las investigaciones demuestran que intervenir en la fase de alerta temprana es 3-4 veces más efectivo que esperar. Tu ventana de oportunidad es ahora, antes de que estos síntomas se vuelvan crónicos.'}
+                  {result === 'orange' && 'Tus síntomas están en el punto crítico donde pueden volverse irreversibles si no actúas de inmediato. La diferencia entre recuperación rápida y sufrimiento prolongado se mide en días, no en meses.'}
+                  {result === 'red' && 'Tu sobrecarga emocional requiere atención especializada inmediata. Cada día en crisis aumenta el riesgo de consecuencias graves. No esperes más: tu bienestar no puede seguir esperando.'}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Pricing Section */}
+        <div className={`${config.cardBg} rounded-3xl shadow-xl p-8 md:p-12 mb-12 border-2 border-gray-200`}>
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-8 text-center">
+            Inversión en tu Recuperación
+          </h2>
+
+          <div className="max-w-2xl mx-auto">
+            <div className="bg-white rounded-2xl p-8 mb-6 text-center shadow-lg">
+              <div className="mb-4">
+                <div className="text-gray-500 text-lg line-through">$700.000 CLP</div>
+                <div className={`text-5xl md:text-6xl font-bold ${config.accentColor} mb-2`}>
+                  $490.000 CLP
+                </div>
+                <div className="inline-block bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-semibold">
+                  30% de descuento incluido
+                </div>
+              </div>
+              <p className="text-gray-600 text-lg text-center md:text-justify">
+                {result === 'green' && 'Tu Programa de Fortalecimiento Preventivo de 4 sesiones: mantén tu bienestar alto y sostenible'}
+                {result === 'yellow' && 'Tu Programa de Intervención Temprana de 4 sesiones: detecta y revierte ahora antes de la crisis'}
+                {result === 'orange' && 'Tu Programa de Reversión Urgente de 4 sesiones: recupera el control antes de que sea tarde'}
+                {result === 'red' && 'Tu Programa de Contención y Recuperación de 4 sesiones: respuesta especializada a tu crisis'}
+              </p>
+            </div>
+
+            <div className="bg-gradient-to-r from-blue-500 to-teal-500 rounded-2xl p-6 text-white text-center mb-6">
+              <div className="flex items-center justify-center mb-3">
+                <TrendingUp className="w-8 h-8 mr-3" />
+                <h3 className="text-2xl font-bold">Beneficio seguro complementario ENAP</h3>
+              </div>
+              <p className="text-xl">Si eres trabajador de ENAP, consulta por los beneficios de tu seguro complementario</p>
+            </div>
+
+            <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl p-6 border-2 border-emerald-200">
+              <div className="flex items-center justify-center mb-4">
+                <Shield className="w-6 h-6 text-emerald-600 mr-2" />
+                <h3 className="text-lg font-bold text-gray-900">Compatible con ISAPREs y Seguros Complementarios</h3>
+              </div>
+              <p className="text-gray-700 text-center text-sm md:text-base text-justify">
+                Este diagnóstico es compatible con reembolsos de ISAPREs y seguros complementarios de salud. Consulta con tu aseguradora sobre los beneficios de salud mental disponibles para maximizar tu cobertura.
+              </p>
+            </div>
           </div>
         </div>
 
@@ -614,8 +1088,8 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
                   <Target className="w-6 h-6 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-900 mb-2">Diagnóstico Personalizado</h3>
-                  <p className="text-gray-600 text-sm text-justify">Evaluación completa de tu estado emocional actual</p>
+                  <h3 className="font-bold text-gray-900 mb-2">Diagnóstico Preciso</h3>
+                  <p className="text-gray-600 text-sm text-justify">Evaluación completa de niveles de estrés, ánimo, autocontrol y rumiación</p>
                 </div>
               </div>
             </div>
@@ -626,8 +1100,8 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
                   <Sparkles className="w-6 h-6 text-green-600" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-900 mb-2">Herramientas Prácticas</h3>
-                  <p className="text-gray-600 text-sm text-justify">Técnicas concretas para manejar ansiedad y estrés</p>
+                  <h3 className="font-bold text-gray-900 mb-2">Detección Temprana</h3>
+                  <p className="text-gray-600 text-sm text-justify">Identificación de primeros signos de deterioro antes de la crisis</p>
                 </div>
               </div>
             </div>
@@ -638,8 +1112,8 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
                   <Award className="w-6 h-6 text-purple-600" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-900 mb-2">Plan Individualizado</h3>
-                  <p className="text-gray-600 text-sm text-justify">Estrategias adaptadas a tu nivel de alerta</p>
+                  <h3 className="font-bold text-gray-900 mb-2">Plan de Acción Personalizado</h3>
+                  <p className="text-gray-600 text-sm text-justify">Estrategias prácticas de regulación, autocuidado y prevención</p>
                 </div>
               </div>
             </div>
@@ -650,54 +1124,39 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
                   <Shield className="w-6 h-6 text-teal-600" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-900 mb-2">Acompañamiento Experto</h3>
-                  <p className="text-gray-600 text-sm text-justify">Respaldo profesional y científico continuo</p>
+                  <h3 className="font-bold text-gray-900 mb-2">Reversión del Deterioro</h3>
+                  <p className="text-gray-600 text-sm text-justify">Programa para comprender y revertir el deterioro emocional</p>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Pricing Section */}
-        <div className={`${config.cardBg} rounded-3xl shadow-xl p-8 md:p-12 mb-12 border-2 border-gray-200`}>
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-8 text-center">
-            Inversión
-          </h2>
-
-          <div className="max-w-2xl mx-auto">
-            <div className="bg-white rounded-2xl p-8 mb-6 text-center shadow-lg">
-              <div className="mb-4">
-                <div className="text-gray-500 text-lg line-through">$700.000 CLP</div>
-                <div className={`text-5xl md:text-6xl font-bold ${config.accentColor} mb-2`}>
-                  $490.000 CLP
-                </div>
-                <div className="inline-block bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-semibold">
-                  30% de descuento incluido
-                </div>
-              </div>
-              <p className="text-gray-600 text-lg text-center md:text-justify">
-                Programa completo de 4 sesiones con profesionales especializados
-              </p>
-            </div>
-
-            <div className="bg-gradient-to-r from-blue-500 to-teal-500 rounded-2xl p-6 text-white text-center mb-6">
-              <div className="flex items-center justify-center mb-3">
-                <TrendingUp className="w-8 h-8 mr-3" />
-                <h3 className="text-2xl font-bold">Beneficio Exclusivo ENAP</h3>
-              </div>
-              <p className="text-xl mb-2">Reembolso garantizado del 70%</p>
-              <p className="text-blue-100">Tu inversión real: $147.000 CLP</p>
-            </div>
-
-            <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl p-6 border-2 border-emerald-200">
-              <div className="flex items-center justify-center mb-4">
-                <Shield className="w-6 h-6 text-emerald-600 mr-2" />
-                <h3 className="text-lg font-bold text-gray-900">Compatible con ISAPREs y Seguros Complementarios</h3>
-              </div>
-              <p className="text-gray-700 text-center text-sm md:text-base text-justify">
-                Esta inversión es compatible con reembolsos de ISAPREs y seguros complementarios de salud. Consulta con tu aseguradora sobre los beneficios de salud mental disponibles para maximizar tu cobertura.
-              </p>
-            </div>
+        {/* Social Proof Personalizado */}
+        <div className={`rounded-2xl p-6 mb-8 max-w-3xl mx-auto ${
+          result === 'green' ? 'bg-emerald-50 border-2 border-emerald-200' :
+          result === 'yellow' ? 'bg-yellow-50 border-2 border-yellow-200' :
+          result === 'orange' ? 'bg-orange-50 border-2 border-orange-200' :
+          'bg-red-50 border-2 border-red-200'
+        }`}>
+          <div className="text-center">
+            <p className="text-2xl font-bold text-gray-900 mb-2">
+              {result === 'green' && 'Cientos de personas han fortalecido su bienestar con Origamis'}
+              {result === 'yellow' && 'El 87% de quienes intervienen en fase temprana evitan crisis futuras'}
+              {result === 'orange' && 'El 92% de nuestros participantes recuperan el control en 4 sesiones'}
+              {result === 'red' && 'Cientos de personas han salido de crisis emocionales con Origamis'}
+            </p>
+            <p className={`text-lg ${
+              result === 'green' ? 'text-emerald-800' :
+              result === 'yellow' ? 'text-yellow-800' :
+              result === 'orange' ? 'text-orange-800' :
+              'text-red-800'
+            }`}>
+              {result === 'green' && 'Únete a profesionales que invierten en mantener su bienestar alto'}
+              {result === 'yellow' && 'Únete a quienes actuaron a tiempo y evitaron el burnout'}
+              {result === 'orange' && 'Únete a quienes recuperaron el control antes de la crisis total'}
+              {result === 'red' && 'No estás solo/a: otros han salido de donde estás ahora'}
+            </p>
           </div>
         </div>
 
@@ -705,7 +1164,12 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
         <div className="bg-white rounded-3xl shadow-xl p-8 md:p-12 mb-12">
           <div className="flex items-center justify-center mb-8">
             <Users className="w-8 h-8 text-gray-400 mr-3" />
-            <h2 className="text-3xl font-bold text-gray-900">Lo que dicen nuestros participantes</h2>
+            <h2 className="text-3xl font-bold text-gray-900">
+              {result === 'green' && 'Personas como tú que fortalecieron su bienestar'}
+              {result === 'yellow' && 'Personas que actuaron en fase temprana'}
+              {result === 'orange' && 'Personas que recuperaron el control a tiempo'}
+              {result === 'red' && 'Personas que salieron de la crisis con Origamis'}
+            </h2>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
@@ -757,7 +1221,7 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
 
           <div className="mt-8 text-center">
             <p className="text-xl text-gray-600">
-              Más de <span className="font-bold text-gray-900">100 personas</span> ya transformaron su bienestar con nuestro programa
+              Cientos de <span className="font-bold text-gray-900">personas</span> ya transformaron su bienestar con nuestro programa
             </p>
           </div>
         </div>
@@ -941,12 +1405,6 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
           </div>
         )}
 
-        {submitStatus === 'success' && (
-          <div className="bg-green-50 rounded-2xl p-4 mb-6 flex items-center justify-center max-w-2xl mx-auto">
-            <CheckCircle className="w-5 h-5 mr-2 text-green-600" />
-            <span className="text-green-700">Resultados enviados correctamente</span>
-          </div>
-        )}
 
         {submitStatus === 'error' && (
           <div className="bg-red-50 rounded-2xl p-4 mb-6 flex items-center justify-center max-w-2xl mx-auto">
@@ -1011,7 +1469,6 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
 
         {/* Footer Info */}
         <div className="mt-12 text-center text-sm text-gray-500 space-y-2">
-          <p>ID de Sesión: {sessionId}</p>
           <p className="max-w-2xl mx-auto">
             Este cuestionario es un tamizaje y no reemplaza una evaluación clínica profesional.
             Los resultados son confidenciales y solo se utilizan para ofrecerte el mejor programa personalizado.

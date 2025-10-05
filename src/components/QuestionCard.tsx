@@ -15,10 +15,10 @@ interface QuestionCardProps {
 }
 
 const defaultAnswerOptions = [
-  { label: 'Nunca o 1 día', value: 0, color: 'from-green-400 to-green-500', emoji: '😊' },
-  { label: 'Varios días (2-6)', value: 1, color: 'from-yellow-400 to-yellow-500', emoji: '😐' },
-  { label: 'Más de la mitad (7-11)', value: 2, color: 'from-orange-400 to-orange-500', emoji: '😟' },
-  { label: 'Casi todos los días (12-14)', value: 3, color: 'from-red-400 to-red-500', emoji: '😩' }
+  { label: 'No me pasó o quizás un día', value: 0, color: 'from-green-400 to-green-500', emoji: '😊' },
+  { label: 'Me pasó varios días (de 2 a 4)', value: 1, color: 'from-yellow-400 to-yellow-500', emoji: '😐' },
+  { label: 'Me pasó bastante (de 5 a 8 días)', value: 2, color: 'from-orange-400 to-orange-500', emoji: '😟' },
+  { label: 'Me pasó casi todos los días (de 9 a 14)', value: 3, color: 'from-red-400 to-red-500', emoji: '😩' }
 ];
 
 const categoryColors = {
@@ -79,17 +79,9 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
 
             {/* Header */}
             <div className="text-center mb-8">
-              {category && (
-                <div className={`inline-flex items-center px-6 py-3 rounded-full bg-gradient-to-r ${categoryColor} text-white text-sm font-medium mb-2 shadow-lg`}>
-                  <div className="w-2 h-2 bg-white rounded-full mr-2 animate-pulse"></div>
-                  {category}
-                </div>
-              )}
-              {category && (
-                <p className="text-sm text-gray-500 mt-2 mb-4 font-medium">
-                  En los últimos 14 días
-                </p>
-              )}
+              <p className="text-lg md:text-xl text-gray-700 mb-6 font-semibold">
+                En los últimos 14 días
+              </p>
               <h2 className="text-2xl md:text-3xl font-bold text-gray-800 leading-tight">
                 {question.text}
               </h2>

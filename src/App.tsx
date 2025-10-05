@@ -4,7 +4,6 @@ import { RegistrationForm } from './components/RegistrationForm';
 import { QuestionCard } from './components/QuestionCard';
 import { ResultsScreen } from './components/ResultsScreen';
 import { useQuestionnaireLogic } from './hooks/useQuestionnaireLogic';
-import { sendToSheetForm } from './lib/sheets';
 
 type AppState = 'welcome' | 'registration' | 'questionnaire' | 'results';
 
@@ -25,7 +24,6 @@ function App() {
     goToPreviousQuestion,
     calculateResult,
     calculateCategoryScores,
-    getTriageRecommendation,
     getDetailedAnswers,
     resetQuestionnaire,
     canGoNext,
@@ -65,14 +63,12 @@ function App() {
   if (appState === 'results') {
     const { result, score } = calculateResult();
     const categoryScores = calculateCategoryScores();
-    const triageRecommendation = getTriageRecommendation();
     const detailedAnswers = getDetailedAnswers();
     return (
       <ResultsScreen
         result={result}
         score={score}
         categoryScores={categoryScores}
-        triageRecommendation={triageRecommendation}
         detailedAnswers={detailedAnswers}
         sessionId={sessionId}
         userData={userData}
