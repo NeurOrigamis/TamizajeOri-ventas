@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: '/Tamizaje-ventas/',   // 
+  base: '/TamizajeOri-ventas/',   // 👈 nombre EXACTO del repo
   plugins: [react()],
   optimizeDeps: {
     exclude: ['lucide-react'],
