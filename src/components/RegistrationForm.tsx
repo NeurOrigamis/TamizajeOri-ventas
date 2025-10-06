@@ -50,34 +50,34 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegister }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center p-3 md:p-4">
       <div className="max-w-md w-full">
-        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-8 border border-white/20">
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-500 to-green-500 rounded-full mb-6">
-              <User className="w-8 h-8 text-white" />
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl md:rounded-3xl shadow-2xl p-6 md:p-8 border border-white/20">
+          <div className="text-center mb-6 md:mb-8">
+            <div className="inline-flex items-center justify-center w-14 h-14 md:w-16 md:h-16 bg-gradient-to-r from-blue-500 to-green-500 rounded-full mb-4 md:mb-6">
+              <User className="w-7 h-7 md:w-8 md:h-8 text-white" />
             </div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-4">
+            <h1 className="text-xl md:text-3xl font-bold text-gray-800 mb-3 md:mb-4">
               Antes de continuar...
             </h1>
-            <p className="text-gray-600">
+            <p className="text-sm md:text-base text-gray-600 px-2">
               Para brindarte una experiencia personalizada, necesitamos algunos datos básicos.
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-5 md:space-y-6">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="name" className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
                 Nombre completo
               </label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-gray-400" />
                 <input
                   type="text"
                   id="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  className="w-full pl-9 md:pl-10 pr-4 py-2.5 md:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm md:text-base"
                   placeholder="Ingresa tu nombre completo"
                   disabled={isSubmitting}
                 />
@@ -85,17 +85,17 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegister }
             </div>
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="email" className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
                 Correo electrónico
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-gray-400" />
                 <input
                   type="email"
                   id="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  className="w-full pl-9 md:pl-10 pr-4 py-2.5 md:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm md:text-base"
                   placeholder="tu@email.com"
                   disabled={isSubmitting}
                 />
@@ -103,15 +103,15 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegister }
             </div>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-                <p className="text-red-600 text-sm">{error}</p>
+              <div className="bg-red-50 border border-red-200 rounded-xl p-3 md:p-4">
+                <p className="text-red-600 text-xs md:text-sm">{error}</p>
               </div>
             )}
 
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-gradient-to-r from-blue-600 to-green-600 text-white font-semibold py-4 px-8 rounded-2xl hover:from-blue-700 hover:to-green-700 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              className="w-full bg-gradient-to-r from-blue-600 to-green-600 text-white font-semibold py-3 md:py-4 px-6 md:px-8 rounded-xl md:rounded-2xl hover:from-blue-700 hover:to-green-700 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-base md:text-lg"
             >
               {isSubmitting ? (
                 <>
@@ -127,8 +127,8 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegister }
             </button>
           </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-xs text-gray-500">
+          <div className="mt-5 md:mt-6 text-center">
+            <p className="text-xs md:text-xs text-gray-500 px-2">
               Tus datos están protegidos y solo serán utilizados para brindarte una mejor experiencia personalizada.
             </p>
           </div>

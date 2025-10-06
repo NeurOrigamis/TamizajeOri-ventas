@@ -49,9 +49,9 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
   const answerOptions = defaultAnswerOptions;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center p-3 md:p-4">
       <div className="max-w-2xl w-full">
-        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/20 overflow-hidden">
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl md:rounded-3xl shadow-2xl border border-white/20 overflow-hidden">
           {/* Progress Bar */}
           <div className="h-2 bg-gray-100">
             <div 
@@ -60,59 +60,59 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
             />
           </div>
 
-          <div className="p-8 md:p-12">
+          <div className="p-5 md:p-12">
             {/* Instructions - Solo mostrar en la primera pregunta */}
             {questionNumber === 1 && (
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 mb-8 border border-blue-100">
-                <div className="flex items-center mb-3">
-                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center mr-3">
-                    <span className="text-white text-sm font-bold">ℹ️</span>
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl md:rounded-2xl p-4 md:p-6 mb-6 md:mb-8 border border-blue-100">
+                <div className="flex items-center mb-2 md:mb-3">
+                  <div className="w-7 h-7 md:w-8 md:h-8 bg-blue-500 rounded-full flex items-center justify-center mr-2 md:mr-3 flex-shrink-0">
+                    <span className="text-white text-xs md:text-sm font-bold">ℹ️</span>
                   </div>
-                  <h3 className="text-lg font-semibold text-blue-800">Instrucciones</h3>
+                  <h3 className="text-base md:text-lg font-semibold text-blue-800">Instrucciones</h3>
                 </div>
-                <p className="text-blue-700 leading-relaxed pl-11">
-                  <strong>Marque la alternativa que mejor describa su experiencia en los últimos 14 días.</strong> 
+                <p className="text-xs md:text-base text-blue-700 leading-relaxed pl-9 md:pl-11">
+                  <strong>Marque la alternativa que mejor describa su experiencia en los últimos 14 días.</strong>
                   Responda todas las preguntas. Este cuestionario es un tamizaje y no reemplaza una evaluación clínica.
                 </p>
               </div>
             )}
 
             {/* Header */}
-            <div className="text-center mb-8">
-              <p className="text-lg md:text-xl text-gray-700 mb-6 font-semibold">
+            <div className="text-center mb-6 md:mb-8">
+              <p className="text-base md:text-xl text-gray-700 mb-4 md:mb-6 font-semibold">
                 En los últimos 14 días
               </p>
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-800 leading-tight">
+              <h2 className="text-xl md:text-3xl font-bold text-gray-800 leading-tight px-2">
                 {question.text}
               </h2>
             </div>
-            <div className="space-y-4 mb-8">
+            <div className="space-y-3 md:space-y-4 mb-6 md:mb-8">
               {answerOptions.map((option) => (
                 <button
                   key={option.value}
                   onClick={() => onAnswerSelect(option.value)}
-                  className={`w-full p-5 rounded-2xl border-2 transition-all duration-300 transform hover:scale-[1.02] text-left group ${
+                  className={`w-full p-4 md:p-5 rounded-xl md:rounded-2xl border-2 transition-all duration-300 transform hover:scale-[1.02] text-left group ${
                     selectedAnswer === option.value
                       ? `border-transparent bg-gradient-to-r ${option.color} text-white shadow-xl scale-[1.02]`
                       : 'border-gray-200 bg-white/70 hover:border-gray-300 hover:shadow-lg hover:bg-white'
                   }`}
                 >
-                  <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-3 md:space-x-4">
                     <div className="flex-1">
-                      <div className={`text-lg font-medium mb-1 ${
+                      <div className={`text-sm md:text-lg font-medium mb-1 ${
                         selectedAnswer === option.value ? 'text-white' : 'text-gray-800'
                       }`}>
-                        <span className="mr-3 text-xl">{option.emoji}</span>
+                        <span className="mr-2 md:mr-3 text-lg md:text-xl">{option.emoji}</span>
                         {option.label}
                       </div>
                     </div>
-                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${
+                    <div className={`w-5 h-5 md:w-6 md:h-6 rounded-full border-2 flex items-center justify-center transition-all duration-300 flex-shrink-0 ${
                       selectedAnswer === option.value
                         ? 'border-white bg-white/30 shadow-lg'
                         : 'border-gray-300 group-hover:border-gray-400'
                     }`}>
                       {selectedAnswer === option.value && (
-                        <div className="w-3 h-3 rounded-full bg-white animate-pulse"></div>
+                        <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-white animate-pulse"></div>
                       )}
                     </div>
                   </div>
@@ -135,7 +135,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                 <span>Anterior</span>
               </button>
 
-              <div className="text-sm text-gray-500">
+              <div className="text-xs md:text-sm text-gray-500 font-medium">
                 {questionNumber}/{totalQuestions}
               </div>
 

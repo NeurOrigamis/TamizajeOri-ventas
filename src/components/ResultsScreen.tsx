@@ -631,53 +631,53 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
   return (
     <div className={`min-h-screen bg-gradient-to-br ${config.bgGradient}`}>
       {/* Hero Section */}
-      <div className="max-w-6xl mx-auto px-4 py-12 md:py-20">
-        <div className="text-center mb-16">
+      <div className="max-w-6xl mx-auto px-3 md:px-4 py-8 md:py-20">
+        <div className="text-center mb-10 md:mb-16">
           {/* Icon */}
-          <div className={`inline-flex items-center justify-center w-24 h-24 ${config.iconBg} rounded-3xl mb-6 shadow-lg`}>
-            <IconComponent className={`w-12 h-12 ${config.accentColor}`} />
+          <div className={`inline-flex items-center justify-center w-16 h-16 md:w-24 md:h-24 ${config.iconBg} rounded-2xl md:rounded-3xl mb-4 md:mb-6 shadow-lg`}>
+            <IconComponent className={`w-8 h-8 md:w-12 md:h-12 ${config.accentColor}`} />
           </div>
 
           {/* Result Label */}
-          <div className="mb-4">
-            <span className={`inline-block px-6 py-2 ${config.cardBg} rounded-full text-sm font-semibold ${config.accentColor} uppercase tracking-wide`}>
+          <div className="mb-3 md:mb-4">
+            <span className={`inline-block px-4 md:px-6 py-1.5 md:py-2 ${config.cardBg} rounded-full text-xs md:text-sm font-semibold ${config.accentColor} uppercase tracking-wide`}>
               {config.resultLabel}
             </span>
           </div>
 
           {/* Headline */}
-          <h1 className="text-3xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight max-w-4xl mx-auto">
-            {firstName && <span className="block mb-2 text-2xl md:text-3xl text-gray-700">Hola {firstName},</span>}
+          <h1 className="text-2xl md:text-5xl font-bold text-gray-900 mb-4 md:mb-6 leading-tight max-w-4xl mx-auto px-2">
+            {firstName && <span className="block mb-2 text-xl md:text-3xl text-gray-700">Hola {firstName},</span>}
             {config.headline}
           </h1>
 
           {/* Subheadline */}
-          <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto leading-relaxed text-center md:text-justify">
+          <p className="text-base md:text-2xl text-gray-600 max-w-3xl mx-auto leading-relaxed text-center md:text-justify px-2">
             {config.subheadline}
           </p>
 
           {/* Score Badge */}
-          <div className="mt-8 inline-flex items-center bg-white rounded-2xl px-8 py-4 shadow-lg border border-gray-100">
-            <span className="text-lg text-gray-600 mr-2">Tu puntaje:</span>
-            <span className={`text-3xl font-bold ${config.accentColor}`}>{score}/30</span>
+          <div className="mt-6 md:mt-8 inline-flex items-center bg-white rounded-xl md:rounded-2xl px-5 md:px-8 py-3 md:py-4 shadow-lg border border-gray-100">
+            <span className="text-sm md:text-lg text-gray-600 mr-2">Tu puntaje:</span>
+            <span className={`text-2xl md:text-3xl font-bold ${config.accentColor}`}>{score}/30</span>
           </div>
         </div>
 
         {/* Personalized Interpretation Section */}
-        <div className={`${config.cardBg} rounded-3xl shadow-xl p-8 md:p-12 mb-12 border-2 ${config.borderColor || 'border-gray-200'}`}>
-          <div className="flex items-start space-x-4 mb-6">
-            <div className={`flex-shrink-0 w-16 h-16 ${config.iconBg} rounded-2xl flex items-center justify-center`}>
+        <div className={`${config.cardBg} rounded-2xl md:rounded-3xl shadow-xl p-5 md:p-12 mb-8 md:mb-12 border-2 ${config.borderColor || 'border-gray-200'}`}>
+          <div className="flex items-start space-x-3 md:space-x-4 mb-5 md:mb-6">
+            <div className={`flex-shrink-0 w-12 h-12 md:w-16 md:h-16 ${config.iconBg} rounded-xl md:rounded-2xl flex items-center justify-center`}>
               {isLoadingAI ? (
-                <Loader2 className={`w-8 h-8 ${config.accentColor} animate-spin`} />
+                <Loader2 className={`w-6 h-6 md:w-8 md:h-8 ${config.accentColor} animate-spin`} />
               ) : (
-                <Sparkles className={`w-8 h-8 ${config.accentColor}`} />
+                <Sparkles className={`w-6 h-6 md:w-8 md:h-8 ${config.accentColor}`} />
               )}
             </div>
             <div>
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
+              <h2 className="text-xl md:text-3xl font-bold text-gray-900 mb-1 md:mb-2">
                 ¿Qué significan tus resultados?
               </h2>
-              <p className="text-gray-600">
+              <p className="text-xs md:text-base text-gray-600">
                 {isLoadingAI ? 'Generando análisis personalizado con IA...' : 'Análisis personalizado generado con inteligencia artificial'}
               </p>
             </div>
@@ -708,13 +708,13 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
                     <Target className={`w-6 h-6 mr-2 ${config.accentColor}`} />
                     Tu plan de acción personalizado
                   </h3>
-                  <ul className="space-y-3">
+                  <ul className="space-y-2 md:space-y-3">
                     {aiAnalysis.actionPlan.slice(0, 3).map((area, index) => (
-                      <li key={index} className="flex items-start space-x-3">
-                        <span className={`flex-shrink-0 w-6 h-6 ${config.iconBg} ${config.accentColor} rounded-full flex items-center justify-center text-sm font-bold`}>
+                      <li key={index} className="flex items-start space-x-2 md:space-x-3">
+                        <span className={`flex-shrink-0 w-7 h-7 md:w-8 md:h-8 ${config.iconBg} ${config.accentColor} rounded-full flex items-center justify-center text-sm md:text-base font-bold`}>
                           {index + 1}
                         </span>
-                        <span className="text-gray-700 pt-0.5 text-justify">{area}</span>
+                        <span className="text-sm md:text-base text-gray-700 pt-1 text-justify flex-1">{area}</span>
                       </li>
                     ))}
                   </ul>
